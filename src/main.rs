@@ -8,6 +8,8 @@ const NOTES: [&str; 12] = [
     "A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#",
 ];
 
+const NON_ACCIDENTAL_NOTES: [&str; 7] = ["A", "B", "C", "D", "E", "F", "G"];
+
 const INTERVALS: [&str; 6] = [
     "third",
     "fifth",
@@ -15,6 +17,16 @@ const INTERVALS: [&str; 6] = [
     "ninth",
     "eleventh",
     "thirteenth",
+];
+
+const GREEK_MODES: [&str; 7] = [
+    "ionian",
+    "dorian",
+    "phrygian",
+    "lidian",
+    "mixolydian",
+    "aeolian",
+    "locrian",
 ];
 
 enum ToneMeasure {
@@ -31,6 +43,62 @@ const MAJOR_HARMONIC_INTERVALS: [&ToneMeasure; 7] = [
     &ToneMeasure::Tone,
     &ToneMeasure::SemiTone,
 ];
+
+fn get_chords_for_major_note(note: &str) -> [&'static str; 7] {
+    let chords_for_notes: HashMap<&str, [&str; 7]> = HashMap::from([
+        ("A", ["A", "Bm", "C#m", "D", "E", "F#m", "G#/5b"]),
+        ("B", ["B", "C#m", "D#m", "E", "F#", "G#m", "A#m/5b"]),
+        ("C", ["C", "Dm", "Em", "F", "G", "Am", "B/5b"]),
+        ("D", ["D", "Em", "F#m", "G", "A", "Bm", "C#/5b"]),
+        ("E", ["E", "F#m", "G#m", "A", "B", "C#m", "D#/5b"]),
+        ("F", ["F", "Gm", "Am", "Bb", "C", "Dm", "E/5b"]),
+        ("G", ["G", "Am", "Bm", "C", "D", "Em", "F#/5b"]),
+    ]);
+
+    *chords_for_notes.get(note).unwrap()
+}
+
+fn get_greek_mode_scale(note: &str) -> [&'static str; 7] {
+    let scale_for_mode: HashMap<&str, [&str; 7]> = HashMap::from([
+        ("ionian", ["T", "2", "3", "4", "5", "6", "7"]),
+        ("dorian", ["T", "2", "3b", "4", "5", "6", "7b"]),
+        ("phrygian", ["T", "2b", "3b", "4", "5", "6b", "7b"]),
+        ("lidian", ["T", "2", "3", "4#", "5", "6", "7"]),
+        ("mixolydian", ["T", "2", "3", "4", "5", "6", "7b"]),
+        ("aeolian", ["T", "2", "3b", "4", "5", "6b", "7b"]),
+        ("locrian", ["T", "2b", "3b", "4", "5b", "6b", "7b"]),
+    ]);
+
+    *scale_for_mode.get(note).unwrap()
+}
+
+fn get_greek_mode_quirk(note: &str) -> &'static str {
+    let quirk_for_mode: HashMap<&str, &str> = HashMap::from([
+        ("ionian", "happy, energetic, popular"),
+        ("dorian", "latino, swing, party, dance"),
+        ("phrygian", "enigma, spanish, flamenco"),
+        ("lidian", "unexpected, imponent"),
+        ("mixolydian", "blues, country, regional"),
+        ("aeolian", "sad, introspective, reflective, hope"),
+        ("locrian", "unstable, conflict, tense"),
+    ]);
+
+    *quirk_for_mode.get(note).unwrap()
+}
+
+fn get_greek_mode_tonal_signature(note: &str) -> &'static str {
+    let signature_for_mode: HashMap<&str, &str> = HashMap::from([
+        ("ionian", "perfect 4th"),
+        ("dorian", "major 6th"),
+        ("phrygian", "minor 2nd"),
+        ("lidian", "augmented 4th"),
+        ("mixolydian", "minor 7th"),
+        ("aeolian", "minor 6th"),
+        ("locrian", "minor 2nd & diminished 5th"),
+    ]);
+
+    *signature_for_mode.get(note).unwrap()
+}
 
 fn get_relative_interval(note: &str, interval: &str) -> &'static str {
     let semitones_in_intervals: HashMap<&str, usize> = HashMap::from([
@@ -115,7 +183,7 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    note_intervals_deck.write_to_file("note_relations.apkg")?;
+    note_intervals_deck.write_to_file("decks/note_relations.apkg")?;
     curr_id += 1;
     println!("Done.");
 
@@ -135,7 +203,48 @@ fn main() -> Result<(), Error> {
         )?);
     }
 
-    major_harmonic_scales_deck.write_to_file("major_harmonic_scales.apkg")?;
+    for note in NON_ACCIDENTAL_NOTES {
+        major_harmonic_scales_deck.add_note(Note::new(
+            basic_model(),
+            vec![
+                &format!("Chords in {} major", note),
+                &get_chords_for_major_note(note).join(" "),
+            ],
+        )?);
+    }
+
+    major_harmonic_scales_deck.write_to_file("decks/major_harmonic_scales.apkg")?;
+    curr_id += 1;
+    println!("Done.");
+    println!("Building greek modes deck...");
+    let mut greek_modes_deck = Deck::new(curr_id, "Greek modes deck", "Deck for greek modes");
+    for mode in GREEK_MODES {
+        greek_modes_deck.add_note(Note::new(
+            basic_model(),
+            vec![
+                &format!("Scale for greek mode: {}", mode),
+                &get_greek_mode_scale(mode).join(" "),
+            ],
+        )?);
+
+        greek_modes_deck.add_note(Note::new(
+            basic_model(),
+            vec![
+                &format!("Quirk for greek mode: {}", mode),
+                &get_greek_mode_quirk(mode),
+            ],
+        )?);
+
+        greek_modes_deck.add_note(Note::new(
+            basic_model(),
+            vec![
+                &format!("Tonal signature for greek mode: {}", mode),
+                &get_greek_mode_tonal_signature(mode),
+            ],
+        )?);
+    }
+
+    greek_modes_deck.write_to_file("decks/greek_modes.apkg")?;
     curr_id += 1;
     println!("Done.");
 
